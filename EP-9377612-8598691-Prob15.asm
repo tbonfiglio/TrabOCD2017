@@ -6,95 +6,120 @@
 	linha4: .word 31, 32, 33, 34, 35, 36, 37, 38, -1 # objeto -1 indica o final do vetor
 	linha5: .word 41, 42, 43, 44, 45, 46, 47, 48, -1 # objeto -1 indica o final do vetor
 	matriz: .word linha1 , linha2 , linha3 , linha4 , linha5 , 0 # objeto 0 indica o final do vetor de vetores
-
-	# variáveis das linhas em maiúsculo para não dar conflito com os comandos como o de JUMP(j)
-	I:	.word 1 # Índice da primeira linha para fazer a troca
-	J:	.word 4 # Índice da segunda linha para fazer a troca
 	
-	$linhaI: .word
-	$linhaJ: .word
-	coluna: .word
-
-	$texto:  .asciiz "teste"
-	$novaLinha: .asciiz "\n"
+	# variáveis das linhas em maiúsculo para não dar conflito com os comandos como o de JUMP(j)
+	I:	.word 1  # Índice da primeira linha para fazer a troca
+	J:	.word 4  # Índice da segunda linha para fazer a troca
+	
+	$legenda:	.asciiz "Valor antigo: I - J Novo -> I - J" 
+	$hifen:  	.asciiz " - "
+	$antigo:  	.asciiz "Valor antigo: "
+	$novo:  	.asciiz " Novo -> "
+	$novaLinha: 	.asciiz  "\n"
 
 .text
-	main:		
-		li $s3, 0 #inicia o iterador da linha
-		#la $s1, $matriz #aponta para o matriz
+	main:
+		# Iremos guardar o endereço das linhas que iremos realizar a troca para facilitar	
+		jal pegaLinhasTroca
 		
-		#ld $s3,($s1) #pega o endereço da linha dentro da matriz
-		#ld $s4,($s3) #pega o valor da  linha
+		# Pega endereço dos valor dentro das linhas
+		lw $s3, ($s1)  
+		lw $s4, ($s2)
+				
+		la  $a0, $legenda
+		li $v0,4
+        	syscall
+        	
+        	la  $a0, $novaLinha
+		li $v0,4
+        	syscall
 		
-		lw $s0, I
-		mul $s0, $s0, 4 # índice * tamanho da palavra
-		lw $s1, J
-		mul $s1, $s1, 4 # índice * tamanho da palavra
+		j loop
 		
-		lw $t0, matriz($s0) 
-		lw $t1, matriz($s1)
+	finaliza:
+		li $v0, 10  # Comando de exit
+		syscall  # Efetua a chamada ao sistema
 		
-		sw $t0, $linhaI
-		sw $t1, $linhaJ
+	pegaLinhasTroca:
+		# Iremos guardar o endereço das linhas que iremos realizar a troca para facilitar	
+		lw $t0, I
+		mul $t0, $t0, 4  # índice * tamanho da palavra
+		lw $t1, J
+		mul $t1, $t1, 4  # índice * tamanho da palavra
 		
-		li $v0,1 #comando de impressão de texto na tela
-		la $a0, $linhaJ #coloca o registrador do contador para ser impresso
-		syscall # efetua a chamada ao sistema
+		la $t2, matriz($t0)  # guarda a posição da memória que o endereço da LinhaI está
+		la $t3, matriz($t1)  # guarda a posição da memória que o endereço da LinhaJ está
+		
+		lw $s1,($t2)  # pega o endereço da  LinhaI e guarda no registrador s1
+		lw $s2,($t3)  # pega o endereço da  LinhaJ e guarda no registrador s2
+		
+		jr $ra  # Volta para main de onde chamou o pegaLinhasTroca
+	
+	loop:	
+		# Pega valor das linhas
+		lw $s3, ($s1)
+		lw $s4, ($s2)
+		
+		# Se pelo menos uma das listas não tiver mais valores para ser trocado, para a troca e encerra o programa
+		blt $s3, 0, finaliza  # Caso seja o final do array(numero menor que 0) ele desvia para finaliza
+		blt $s4, 0, finaliza  # Caso seja o final do array(numero menor que 0) ele desvia para finaliza
+		
+		jal fazTroca
 		
 		la  $a0, $novaLinha
 		li $v0,4
         	syscall
+        	
+		addi $s1,$s1,4  # vai para próximo valor da LinhaI
+		addi $s2,$s2,4  # vai para próximo valor da LinhaJ
 		
-		lw $s4, $linhaI($s3)
-		lw $s5, $linhaJ($s3)
+		j loop  # desvia para o início do loop
+		
+	fazTroca:
+		# Efetua a troca entre as duas linhas usando o endereço das linhas
+		la  $a0, $antigo
+		li $v0,4
+        	syscall
+        			
+		li $v0,1 #comando de impressão de texto na tela
+		la $a0, ($s3) #coloca o registrador do contador para ser impresso
+		syscall # efetua a chamada ao sistema
+		
+		la  $a0, $hifen
+		li $v0,4
+        	syscall
 		
 		li $v0,1 #comando de impressão de texto na tela
 		la $a0, ($s4) #coloca o registrador do contador para ser impresso
 		syscall # efetua a chamada ao sistema
 		
-		la  $a0, $novaLinha
+		la  $a0, $novo
+		li $v0,4
+        	syscall
+        	
+        	# Usa registradores auxiliares para guardar valor durante a troca da coluna atual
+        	ld $s5, ($s1)
+		ld $s6, ($s2)
+
+		# Armazena valor trocado nos endereços de memória respectivos a coluna atual das linhas
+		sw $s6, ($s1)
+		sw $s5, ($s2)
+		
+		# Atualiza valor dos registradores para confirmar troca
+		lw $s3, ($s1)
+		lw $s4, ($s2)
+        	
+		li $v0,1 #comando de impressão de texto na tela
+		la $a0, ($s3) #coloca o registrador do contador para ser impresso
+		syscall # efetua a chamada ao sistema
+		
+		la  $a0, $hifen
 		li $v0,4
         	syscall
 		
 		li $v0,1 #comando de impressão de texto na tela
-		la $a0, ($t1) #coloca o registrador do contador para ser impresso
+		la $a0, ($s4) #coloca o registrador do contador para ser impresso
 		syscall # efetua a chamada ao sistema
 		
-		la  $a0, $novaLinha
-		li $v0,4
-        	syscall
+		jr $ra  # Volta para loop de onde chamou o fazTroca
 		
-		li $v0,1 #comando de impressão de texto na tela
-		la $a0, ($t0) #coloca o registrador do contador para ser impresso
-		syscall # efetua a chamada ao sistema
-		
-		
-		#li $v0,1 #comando de impressão de texto na tela
-		#la $a0, 0($s4) #coloca o registrador do contador para ser impresso
-		#syscall # efetua a chamada ao sistema
-		
-		#j loop
-		j finaliza
-		
-	loop:
-		blt $s4,0,finaliza # caso seja o final do array(numero menor que 0) ele desvia para finaliza
-		#blez $s3,finaliza # caso seja o final das linhas (numero menor ou igual a 0) ele desvia para finaliza
-		
-		li $v0,1 #comando de impressão de texto na tela
-		la $a0, 0($s4) #coloca o registrador do contador para ser impresso
-		syscall # efetua a chamada ao sistema
-		
-		addi $s3,$s3,4 # vai pro proximo
-		j loop #desvia para o loop
-	
-	fazTroca:
-		jr $ra
-		
-	imprimeContador:		
-		li $v0,1 #comando de impressão de texto na tela
-		la $a0, ($s0) #coloca o registrador do contador para ser impresso
-		syscall # efetua a chamada ao sistema
-		
-	finaliza:
-		li $v0, 10 # comando de exit
-		syscall # efetua a chamada ao sistema
