@@ -11,6 +11,7 @@
 	I:	.word 1  # Índice da primeira linha para fazer a troca
 	J:	.word 4  # Índice da segunda linha para fazer a troca
 	
+	# variáveis usadas para imprimir textos de legenda na tela
 	$legenda:	.asciiz "Valor antigo: I - J Novo -> I - J" 
 	$hifen:  	.asciiz " - "
 	$antigo:  	.asciiz "Valor antigo: "
@@ -25,16 +26,16 @@
 		# Pega endereço dos valor dentro das linhas
 		lw $s3, ($s1)  
 		lw $s4, ($s2)
-				
-		la  $a0, $legenda
-		li $v0,4
-        	syscall
-        	
-        	la  $a0, $novaLinha
-		li $v0,4
-        	syscall
 		
-		j loop
+		la  $a0, $legenda  # coloca o endereço da variável da memória para ser impressa
+		li $v0,4  # comando de impressão de texto na tela
+        	syscall  # efetua a chamada ao sistema
+        	
+        	la  $a0, $novaLinha  # coloca o endereço da variável da memória para ser impressa
+		li $v0,4  # comando de impressão de texto na tela
+        	syscall   # efetua a chamada ao sistema
+		
+		j loop  # desvia para o loop
 		
 	finaliza:
 		li $v0, 10  # Comando de exit
@@ -64,11 +65,14 @@
 		blt $s3, 0, finaliza  # Caso seja o final do array(numero menor que 0) ele desvia para finaliza
 		blt $s4, 0, finaliza  # Caso seja o final do array(numero menor que 0) ele desvia para finaliza
 		
+		# Imprime valores antes da troca
+		jal ImprimeAntes
+		
+		# Realiza troca dos valores das linhas na coluna atual
 		jal fazTroca
 		
-		la  $a0, $novaLinha
-		li $v0,4
-        	syscall
+		# Imprime valores depois da troca
+		jal ImprimeDepois
         	
 		addi $s1,$s1,4  # vai para próximo valor da LinhaI
 		addi $s2,$s2,4  # vai para próximo valor da LinhaJ
@@ -77,25 +81,6 @@
 		
 	fazTroca:
 		# Efetua a troca entre as duas linhas usando o endereço das linhas
-		la  $a0, $antigo
-		li $v0,4
-        	syscall
-        			
-		li $v0,1 #comando de impressão de texto na tela
-		la $a0, ($s3) #coloca o registrador do contador para ser impresso
-		syscall # efetua a chamada ao sistema
-		
-		la  $a0, $hifen
-		li $v0,4
-        	syscall
-		
-		li $v0,1 #comando de impressão de texto na tela
-		la $a0, ($s4) #coloca o registrador do contador para ser impresso
-		syscall # efetua a chamada ao sistema
-		
-		la  $a0, $novo
-		li $v0,4
-        	syscall
         	
         	# Usa registradores auxiliares para guardar valor durante a troca da coluna atual
         	ld $s5, ($s1)
@@ -108,18 +93,50 @@
 		# Atualiza valor dos registradores para confirmar troca
 		lw $s3, ($s1)
 		lw $s4, ($s2)
-        	
-		li $v0,1 #comando de impressão de texto na tela
-		la $a0, ($s3) #coloca o registrador do contador para ser impresso
-		syscall # efetua a chamada ao sistema
-		
-		la  $a0, $hifen
-		li $v0,4
-        	syscall
-		
-		li $v0,1 #comando de impressão de texto na tela
-		la $a0, ($s4) #coloca o registrador do contador para ser impresso
-		syscall # efetua a chamada ao sistema
 		
 		jr $ra  # Volta para loop de onde chamou o fazTroca
 		
+	ImprimeAntes:
+		# Legendas e variáveis antes de trocar os valores entre as linhas com base na coluna atual
+		la  $a0, $antigo  # coloca o endereço da variável da memória para ser impressa
+		li $v0,4  # comando de impressão de texto na tela
+        	syscall  # efetua a chamada ao sistema
+        			
+		li $v0,1  # comando de impressão de int na tela
+		la $a0, ($s3)  # coloca o registrador do contador para ser impresso
+		syscall  # efetua a chamada ao sistema
+		
+		la  $a0, $hifen  # coloca o endereço da variável da memória para ser impressa
+		li $v0,4  # comando de impressão de texto na tela
+        	syscall  # efetua a chamada ao sistema
+		
+		li $v0,1  # comando de impressão de int na tela
+		la $a0, ($s4)  # coloca o registrador do contador para ser impresso
+		syscall  # efetua a chamada ao sistema
+		
+		jr $ra  # Volta para loop de onde chamou o imprimeAntes
+	
+	ImprimeDepois:
+		# Legendas e variáveis depois de trocar os valores entre as linhas com base na coluna atual
+		la  $a0, $novo  # coloca o endereço da variável da memória para ser impressa
+		li $v0,4  # comando de impressão de texto na tela
+        	syscall  # efetua a chamada ao sistema
+        	
+        	li $v0,1  # comando de impressão de int na tela
+		la $a0, ($s3)  # coloca o registrador do contador para ser impresso
+		syscall  # efetua a chamada ao sistema
+		
+		la  $a0, $hifen  # comando de impressão de int na tela
+		li $v0,4  # comando de impressão de texto na tela
+        	syscall   # efetua a chamada ao sistema
+		
+		li $v0,1  # comando de impressão de int na tela
+		la $a0, ($s4)  # coloca o registrador do contador para ser impresso
+		syscall  # efetua a chamada ao sistema
+		
+		la  $a0, $novaLinha  # comando de impressão de int na tela
+		li $v0,4  # coloca o registrador do contador para ser impresso
+        	syscall  # efetua a chamada ao sistema
+        	
+        	jr $ra  # Volta para loop de onde chamou o imprimeDepois
+        	
